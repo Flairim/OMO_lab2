@@ -1,10 +1,8 @@
 import numpy as np
 
-# Параметри алгоритму
-accuracy_order = 5  # Точність округлення
-eps = 1e-4  # Допустима похибка
+accuracy_order = 5  
+eps = 1e-4  
 
-# Матриця A і вектор b
 A = np.array([
     [8, 4, 2, 1],
     [4, 16, 7, 2],
@@ -13,7 +11,6 @@ A = np.array([
 ])
 b = np.array([7, 13, 17, 3])
 
-# Функція для обчислення нескінченної норми вектора
 def norm_inf(vector):
     """Обчислює нескінченну норму вектора."""
     return np.round(np.max(np.abs(vector)), accuracy_order)
@@ -33,8 +30,8 @@ def zeidel_method(A, b, x0=None):
     """
     n = A.shape[0]
     x = np.zeros(n) if x0 is None else np.copy(x0)
-    k = 0  # Лічильник ітерацій
-    norm = float('inf')  # Початкова норма (встановлюємо велику величину)
+    k = 0  
+    norm = float('inf')  
 
     while norm > eps or k == 0:
         x_prev = np.copy(x)
@@ -50,7 +47,6 @@ def zeidel_method(A, b, x0=None):
 
     return x
 
-# Введення початкового наближення
 def get_initial_approximation(n):
     """
     Запитує початкове наближення у користувача.
@@ -68,7 +64,6 @@ def get_initial_approximation(n):
         x0.append(value)
     return np.array(x0)
 
-# Основна програма
 n = A.shape[0]
 use_custom_approximation = input("Використовувати початкове наближення? (так/ні): ").strip().lower()
 if use_custom_approximation == "так":
@@ -76,11 +71,10 @@ if use_custom_approximation == "так":
 else:
     x0 = None
 
-# Виклик функції для розв'язання системи
 x_solution = zeidel_method(A, b, x0)
 
 # Виведення результатів
 print("\nРезультати обчислень:")
 print(f"Розв'язок системи x = {x_solution}")
-print(f"Перевірка Ax = {A @ x_solution}")  # Перевірка Ax
-print(f"Різниця Ax - b = {A @ x_solution - b}")  # Різниця між Ax і b
+print(f"Перевірка Ax = {A @ x_solution}")  
+print(f"Різниця Ax - b = {A @ x_solution - b}")  
