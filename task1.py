@@ -82,7 +82,6 @@ def gaussian_determinant(A):
             print_step(A, None, step, f"Після перестановки рядків {i+1} і {max_row+1}")
             step += 1
         
-        # Нормалізація діагонального елемента
         pivot = A[i, i]
         if pivot == 0:
             print("Матриця вироджена, визначник дорівнює 0.")
