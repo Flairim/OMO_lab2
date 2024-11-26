@@ -1,59 +1,86 @@
 import numpy as np
 
-# Метод Зейделя
-def seidel_method(A, b, tol=1e-4, max_iter=1000):
-    """
-    Розв’язує систему методом Зейделя.
-    """
-    n = len(b)
-    x = np.zeros(n)
-    iter_count = 0
-    
-    for _ in range(max_iter):
-        x_new = np.copy(x)
-        for i in range(n):
-            sum1 = np.dot(A[i, :i], x_new[:i])  # Використовуємо вже оновлені значення
-            sum2 = np.dot(A[i, i + 1:], x[i + 1:])  # Використовуємо старі значення
-            x_new[i] = (b[i] - sum1 - sum2) / A[i, i]
-        
-        # Перевірка умови зупинки
-        if np.linalg.norm(x_new - x, np.inf) < tol:
-            return x_new, iter_count + 1
-        x = x_new
-        iter_count += 1
-    
-    return x, iter_count
+# Параметри алгоритму
+accuracy_order = 5  # Точність округлення
+eps = 1e-4  # Допустима похибка
 
-# Введена користувачем матриця та вектор
+# Матриця A і вектор b
 A = np.array([
-    [10, 2, -1, 3],
-    [2, 8, 1, -4],
-    [-1, 1, 7, 2],
-    [3, -4, 2, 9]
-], dtype=float)
+    [8, 4, 2, 1],
+    [4, 16, 7, 2],
+    [2, 7, 16, 4],
+    [1, 2, 4, 8]
+])
+b = np.array([7, 13, 17, 3])
 
-b = np.array([7, -3, 5, 2], dtype=float)
+# Функція для обчислення нескінченної норми вектора
+def norm_inf(vector):
+    """Обчислює нескінченну норму вектора."""
+    return np.round(np.max(np.abs(vector)), accuracy_order)
 
-# Перевірка діагонального домінування
-def ensure_diagonal_dominance(A):
-    n = len(A)
+# Реалізація методу Зейделя
+def zeidel_method(A, b, x0=None):
+    """
+    Розв'язання системи лінійних рівнянь методом Зейделя.
+
+    Параметри:
+        A (ndarray): Квадратна матриця системи.
+        b (ndarray): Вектор вільних членів.
+        x0 (ndarray): Початкове наближення (опціонально).
+
+    Повертає:
+        ndarray: Розв'язок системи.
+    """
+    n = A.shape[0]
+    x = np.zeros(n) if x0 is None else np.copy(x0)
+    k = 0  # Лічильник ітерацій
+    norm = float('inf')  # Початкова норма (встановлюємо велику величину)
+
+    while norm > eps or k == 0:
+        x_prev = np.copy(x)
+        k += 1
+        for i in range(n):
+            sum_ = sum(A[i, j] * x[j] for j in range(n) if j != i)
+            x[i] = (b[i] - sum_) / A[i, i]
+
+        x = np.round(x, accuracy_order)
+        norm = norm_inf(x - x_prev)
+        
+        print(f"Ітерація k = {k}, x^{k} = {x}, ||x^k - x^(k-1)|| = {norm}")
+
+    return x
+
+# Введення початкового наближення
+def get_initial_approximation(n):
+    """
+    Запитує початкове наближення у користувача.
+
+    Параметри:
+        n (int): Розмірність вектора.
+
+    Повертає:
+        ndarray: Початкове наближення.
+    """
+    print("Введіть початкове наближення для кожного елемента вектора:")
+    x0 = []
     for i in range(n):
-        if abs(A[i, i]) < np.sum(np.abs(A[i])) - abs(A[i, i]):
-            raise ValueError("Матриця не має діагонального домінування, метод Зейделя може не збігатися!")
+        value = float(input(f"x[{i}] = "))
+        x0.append(value)
+    return np.array(x0)
 
-ensure_diagonal_dominance(A)
+# Основна програма
+n = A.shape[0]
+use_custom_approximation = input("Використовувати початкове наближення? (так/ні): ").strip().lower()
+if use_custom_approximation == "так":
+    x0 = get_initial_approximation(n)
+else:
+    x0 = None
 
-# Запит точності у користувача
-tolerance = float(input("Введіть бажану точність для методу Зейделя: "))
+# Виклик функції для розв'язання системи
+x_solution = zeidel_method(A, b, x0)
 
-# Розв’язання системи методом Зейделя
-seidel_solution, iterations = seidel_method(A, b, tol=tolerance)
-
-# Вивід результатів
-print("\nМатриця A:")
-print(A)
-print("\nВектор b:")
-print(b)
-print("\nРозв’язок методом Зейделя:")
-print(seidel_solution)
-print(f"Кількість ітерацій: {iterations}")
+# Виведення результатів
+print("\nРезультати обчислень:")
+print(f"Розв'язок системи x = {x_solution}")
+print(f"Перевірка Ax = {A @ x_solution}")  # Перевірка Ax
+print(f"Різниця Ax - b = {A @ x_solution - b}")  # Різниця між Ax і b

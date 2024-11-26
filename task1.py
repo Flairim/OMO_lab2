@@ -1,77 +1,190 @@
 import numpy as np
 
-# Метод Гаусса з вибором головного елемента по рядку
-def gauss_method_row_pivoting(A, b):
-    n = len(b)
-    M = A.copy().astype(float)
-    B = b.copy().astype(float)
-    
-    for k in range(n):
-        # Пошук головного елемента в поточному рядку
-        max_col = np.argmax(np.abs(M[k, k:])) + k
-        
-        # Перестановка стовпців
-        if k != max_col:
-            M[:, [k, max_col]] = M[:, [max_col, k]]
-        
-        # Прямий хід
-        for i in range(k + 1, n):
-            factor = M[i, k] / M[k, k]
-            M[i, k:] -= factor * M[k, k:]
-            B[i] -= factor * B[k]
+def print_step(A, b, step, message=""):
+    """Функція для друку матриці A і вектора b на кожному кроці."""
+    print(f"Крок {step}: {message}")
+    print("Матриця A:")
+    print(A)
+    if b is not None:
+        print("Вектор b:")
+        print(b)
+    print("-" * 40)
 
-    # Зворотній хід
+def gaussian_elimination_with_pivoting(A, b):
+    """
+    Розв'язання системи лінійних рівнянь методом Гауса з вибором головного елемента.
+
+    Параметри:
+    A (ndarray): Матриця коефіцієнтів (розмір n x n)
+    b (ndarray): Вектор правої частини (розмір n)
+
+    Повертає:
+    x (ndarray): Розв'язок системи (вектор розмірності n)
+    """
+    A = A.astype(float)
+    b = b.astype(float)
+    n = len(b)
+    
+    step = 1  # Лічильник кроків
+    
+    # Прямий хід
+    for i in range(n):
+        # Вибір головного елемента
+        max_row = i + np.argmax(np.abs(A[i:, i]))
+        if i != max_row:
+            A[[i, max_row]] = A[[max_row, i]]
+            b[[i, max_row]] = b[[max_row, i]]
+            print_step(A, b, step, f"Після перестановки рядків {i+1} і {max_row+1}")
+            step += 1
+        
+        # Нормалізація діагонального елемента
+        pivot = A[i, i]
+        if pivot == 0:
+            raise ValueError("Матриця вироджена, розв'язок неможливий.")
+        A[i] = A[i] / pivot
+        b[i] = b[i] / pivot
+        print_step(A, b, step, f"Після нормалізації рядка {i+1}")
+        step += 1
+        
+        # Обнулення елементів під головним
+        for j in range(i + 1, n):
+            factor = A[j, i]
+            A[j, :] -= factor * A[i, :]
+            b[j] -= factor * b[i]
+            A[j, i] = 0.0  # Явне обнулення
+            print_step(A, b, step, f"Після обнулення елемента у рядку {j+1}, стовпці {i+1}")
+            step += 1
+    
+    # Зворотний хід
     x = np.zeros(n)
     for i in range(n - 1, -1, -1):
-        x[i] = (B[i] - np.dot(M[i, i + 1:], x[i + 1:])) / M[i, i]
+        x[i] = b[i] - np.sum(A[i, i + 1:] * x[i + 1:])
     
+    print("Розв'язок системи:")
+    print(x)
     return x
 
-# Обчислення оберненої матриці
-def calculate_inverse(A):
+def gaussian_determinant(A):
+    """
+    Обчислення визначника методом Гауса з покроковим виведенням.
+
+    Параметри:
+    A (ndarray): Квадратна матриця (розмір n x n)
+
+    Повертає:
+    determinant (float): Визначник матриці
+    """
     n = len(A)
-    augmented = np.hstack((A, np.eye(n)))
-    for k in range(n):
-        max_row = np.argmax(np.abs(augmented[k:, k])) + k
-        augmented[[k, max_row]] = augmented[[max_row, k]]
-        augmented[k] /= augmented[k, k]
-        for i in range(k + 1, n):
-            augmented[i] -= augmented[k] * augmented[i, k]
-    for k in range(n - 1, -1, -1):
-        for i in range(k - 1, -1, -1):
-            augmented[i] -= augmented[k] * augmented[i, k]
-    return augmented[:, n:]
+    A = A.astype(float)
+    determinant = 1
+    step = 1
 
-# Введена користувачем матриця та вектор
-A = np.array([
-    [10, 2, -1, 3],
-    [2, 8, 1, -4],
-    [-1, 1, 7, 2],
-    [3, -4, 2, 9]
-], dtype=float)
+    # Прямий хід
+    for i in range(n):
+        # Вибір головного елемента
+        max_row = i + np.argmax(np.abs(A[i:, i]))
+        if i != max_row:
+            A[[i, max_row]] = A[[max_row, i]]
+            determinant *= -1  # Зміна знаку визначника при перестановці
+            print_step(A, None, step, f"Після перестановки рядків {i+1} і {max_row+1}")
+            step += 1
+        
+        # Нормалізація діагонального елемента
+        pivot = A[i, i]
+        if pivot == 0:
+            print("Матриця вироджена, визначник дорівнює 0.")
+            return 0
+        determinant *= pivot
+        for j in range(i + 1, n):
+            factor = A[j, i] / pivot
+            A[j, :] -= factor * A[i, :]
+            A[j, i] = 0.0  # Явне обнулення
+        
+        print_step(A, None, step, f"Після обнулення елементів під діагоналлю у стовпці {i+1}")
+        step += 1
+    
+    print("Матриця після зведення до верхньотрикутної форми:")
+    print(A)
+    print("-" * 40)
+    
+    print("Обчислення визначника:")
+    print(f"Добуток діагональних елементів: {np.diag(A)}")
+    print("-" * 40)
+    
+    return determinant
 
-b = np.array([7, -3, 5, 2], dtype=float)
+def gaussian_inverse_and_determinant(A):
+    """
+    Обчислення оберненої матриці методом Гауса з вибором головного елемента.
+
+    Параметри:
+    A (ndarray): Матриця коефіцієнтів (розмір n x n)
+
+    Повертає:
+    inverse (ndarray): Обернена матриця (n x n)
+    """
+    n = len(A)
+    A = A.astype(float)
+    
+    # Розширена матриця [A | I]
+    I = np.eye(n)  # Одинична матриця
+    extended_matrix = np.hstack((A, I))
+    step = 1
+
+    # Прямий хід
+    for i in range(n):
+        # Вибір головного елемента
+        max_row = i + np.argmax(np.abs(extended_matrix[i:, i]))
+        if i != max_row:
+            extended_matrix[[i, max_row]] = extended_matrix[[max_row, i]]
+            print_step(extended_matrix[:, :n], extended_matrix[:, n:], step, f"Після перестановки рядків {i+1} і {max_row+1}")
+            step += 1
+        
+        # Нормалізація діагонального елемента
+        pivot = extended_matrix[i, i]
+        if pivot == 0:
+            raise ValueError("Матриця вироджена, обернена матриця не існує.")
+        extended_matrix[i] = extended_matrix[i] / pivot
+        print_step(extended_matrix[:, :n], extended_matrix[:, n:], step, f"Після нормалізації рядка {i+1}")
+        step += 1
+        
+        # Обнулення елементів під головним
+        for j in range(i + 1, n):
+            factor = extended_matrix[j, i]
+            extended_matrix[j] -= factor * extended_matrix[i]
+            print_step(extended_matrix[:, :n], extended_matrix[:, n:], step, f"Після обнулення елемента у рядку {j+1}, стовпці {i+1}")
+            step += 1
+    
+    # Зворотний хід
+    for i in range(n - 1, -1, -1):
+        for j in range(i - 1, -1, -1):
+            factor = extended_matrix[j, i]
+            extended_matrix[j] -= factor * extended_matrix[i]
+            print_step(extended_matrix[:, :n], extended_matrix[:, n:], step, f"Після обнулення елемента над головним у рядку {j+1}, стовпці {i+1}")
+            step += 1
+    
+    # Обернена матриця - це друга половина розширеної матриці
+    inverse = extended_matrix[:, n:]
+    return inverse
+
+# Основний блок
+A = np.array([[-10, -3, -3, -4],
+              [-3, 9, -7, -5],
+              [-9, 10, 1, 6],
+              [10, 8, -1, 1]], dtype=float)
+b = np.array([6, 5, 6, -3], dtype=float)
+
+# Розв'язок СЛАР
+print("\nРозв'язок системи рівнянь:")
+solution = gaussian_elimination_with_pivoting(A.copy(), b)
 
 # Обчислення визначника
-det_A = np.linalg.det(A)
+print("\nОбчислення визначника матриці:")
+determinant = gaussian_determinant(A.copy())
+print("\nВизначник матриці:", determinant)
 
 # Обчислення оберненої матриці
-inv_A = calculate_inverse(A) if det_A != 0 else None
-
-# Розв’язання системи методом Гаусса
-gauss_solution = gauss_method_row_pivoting(A, b)
-
-# Вивід результатів
-print("\nМатриця A:")
-print(A)
-print("\nВектор b:")
-print(b)
-print("\nВизначник матриці A:")
-print(det_A)
-if inv_A is not None:
-    print("\nОбернена матриця A:")
-    print(inv_A)
-else:
-    print("\nМатриця A є виродженою (визначник дорівнює 0).")
-print("\nРозв’язок методом Гаусса з вибором головного елемента по рядку:")
-print(gauss_solution)
+print("\nОбчислення оберненої матриці:")
+inverse_matrix = gaussian_inverse_and_determinant(A.copy())
+print("\nОбернена матриця:")
+print(inverse_matrix)
