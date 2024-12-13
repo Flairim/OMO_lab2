@@ -1,6 +1,6 @@
 import numpy as np
 
-accuracy_order = 5  # Точність обчислень
+accuracy_order = 5  
 
 def Ashift(i, j, A, D, S):
     """Обчислення суми для S і D."""

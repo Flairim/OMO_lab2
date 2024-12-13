@@ -73,7 +73,6 @@ else:
 
 x_solution = zeidel_method(A, b, x0)
 
-# Виведення результатів
 print("\nРезультати обчислень:")
 print(f"Розв'язок системи x = {x_solution}")
 print(f"Перевірка Ax = {A @ x_solution}")  
